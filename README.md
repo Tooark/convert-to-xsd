@@ -78,7 +78,7 @@ A função converter do script realiza as seguintes etapas:
 
 A função principal do script.
 
-Atualizar lista de arquivos a serem convertidos dentro da variável `listFiles` e executar o script.
+Lista de arquivos a serem convertidos dentro da variável `listFiles` e executar o script.
 
 ## Como Executar
 
