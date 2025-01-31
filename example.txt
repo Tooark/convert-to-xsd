@@ -1,0 +1,15 @@
+{
+  "serviceContextId": "123a654b-a1b2-c3d4-e5f6-12345f65f98e",
+  "data": {
+    "Application.Id": "ABCD001122334455",
+    "Application.Decision.Name": "TesteNome",
+    "Application.Order": "08",
+    "Application.Client.DataClient[1].Concentrate.RegistrationData.Name": "AAAAAA",
+    "Application.Client.DataClient[1].Concentrate.Score.Value": "BBBBBB",
+    "Application.Client.DataClient[1].Concentrate.Score.Model": "CCCCCC",
+    "Application.Client.DataClient[2].Concentrate.RegistrationData.Name": "EEEEEE",
+    "Application.Client.DataClient[2].Concentrate.Score.Value": "FFFFFF",
+    "Application.Client.DataClient[2].Concentrate.Score.Model": "GGGGGG",
+    "Error.Message[1].IdMessage": "IIIIII"
+  }
+}
