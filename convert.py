@@ -110,7 +110,7 @@ def create_xsd_complex_type(name, elements):
   return complex_type
 
 # Função para converter um JSON em um XSD
-def json_to_xsd(json_data, root_name="root"):
+def json_to_xsd(json_data, root_name='root'):
   elements = []
 
   # Iterar sobre as chaves e valores do JSON
@@ -153,12 +153,12 @@ def json_to_xsd(json_data, root_name="root"):
   # Criar um tipo complexo para o elemento raiz
   return elements
 
+# Função para converter um arquivo TXT em um arquivo JSON com estrutura aninhada
+def convert(fileName):
+  output = fileName.split('.')[0]
 
-
-# Função principal
-if __name__ == "__main__":
   # Carregar o conteúdo do arquivo
-  with open('example.txt', 'r') as file:
+  with open(fileName, 'r') as file:
     json_content = file.read()
 
   # Converta o conteúdo JSON em um dicionário
@@ -174,16 +174,13 @@ if __name__ == "__main__":
   json_content = json.dumps(nested_dict, indent=4, ensure_ascii=False)
 
   # Salve a string JSON em um arquivo
-  with open('output.json', 'w') as file:
+  with open(output + '.json', 'w') as file:
     file.write(json_content)
 
-  print("O arquivo TXT foi convertido com sucesso para um arquivo JSON com estrutura aninhada.")
+  print('O ' + fileName + ' foi convertido com sucesso para ' + output + '.json')
 
   # Cria o elemento root do XSD
   xsd_root = ET.Element("xs:schema", xmlns_xs="http://www.w3.org/2001/XMLSchema")
-
-  # # Atualiza o 'data' do dicionário original com o dicionário aninhado
-  # original['data'] = nested_dict
 
   # Converte o JSON aninhado em elementos XSD
   xsd_elements = json_to_xsd(nested_dict)
@@ -196,6 +193,16 @@ if __name__ == "__main__":
   xsd_tree = ET.ElementTree(xsd_root)
 
   # Salva a árvore XSD em um arquivo
-  xsd_tree.write("output.xsd")
+  xsd_tree.write(output + '.xsd', encoding='utf-8', xml_declaration=True)
 
-  print("O esquema XSD foi gerado com sucesso e salvo em output.xsd.")
+  print('O ' + fileName + ' foi convertido com sucesso para ' + output + '.xsd')
+
+
+# Função principal
+if __name__ == '__main__':
+  # Lista de arquivos a serem convertidos
+  listFiles = ['example.txt']
+
+  # Iterar sobre os arquivos
+  for file in listFiles:
+    convert(file)

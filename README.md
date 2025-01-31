@@ -59,30 +59,38 @@ Esta função converte um JSON em um esquema XSD.
 - **Retorno**:
   - `elements` (list): Lista de elementos XSD gerados.
 
-### Função Principal
+### Função `convert`
 
-A função principal do script realiza as seguintes etapas:
+A função converter do script realiza as seguintes etapas:
 
-1. Carrega o conteúdo do arquivo `example.txt`.
-2. Converte o conteúdo JSON em um dicionário.
-3. Converte o dicionário plano em um dicionário aninhado.
-4. Remove valores vazios do dicionário aninhado.
-5. Salva o JSON aninhado em `output.json`.
-6. Cria o elemento raiz do XSD.
-7. Converte o JSON aninhado em elementos XSD.
-8. Adiciona os elementos XSD ao elemento raiz.
-9. Salva o esquema XSD em `output.xsd`.
+1. Captura o nome do arquivo `example`.
+2. Carrega o conteúdo do arquivo `example.txt`.
+3. Converte o conteúdo JSON em um dicionário.
+4. Converte o dicionário plano em um dicionário aninhado.
+5. Remove valores vazios do dicionário aninhado.
+6. Salva o JSON aninhado com o nome do arquivo original `example.json`.
+7. Cria o elemento raiz do XSD.
+8. Converte o JSON aninhado em elementos XSD.
+9. Adiciona os elementos XSD ao elemento raiz.
+10. Salva o esquema XSD com o nome do arquivo original `example.xsd`.
+
+### Função `main`
+
+A função principal do script.
+
+Atualizar lista de arquivos a serem convertidos dentro da variável `listFiles` e executar o script.
 
 ## Como Executar
 
 1. Coloque o arquivo `example.txt` na mesma pasta que o script `convert.py`.
-2. Execute o script `convert.py`:
+2. Verifica se a lista de arquivos dentro da função principal esta com o `example.txt`.
+3. Execute o script `convert.py`:
 
    ```sh
    python convert.py
    ```
 
-3. Verifique os arquivos `output.json` e `output.xsd` gerados na mesma pasta.
+4. Verifique os arquivos `example.json` e `example.xsd` gerados na mesma pasta.
 
 ## Exemplo
 
@@ -106,7 +114,7 @@ A função principal do script realiza as seguintes etapas:
 }
 ```
 
-### Arquivo de Saída (`output.json`)
+### Arquivo de Saída (`example.json`)
 
 ```json
 {
@@ -156,7 +164,7 @@ A função principal do script realiza as seguintes etapas:
 }
 ```
 
-### Arquivo de Saída (`output.xsd`)
+### Arquivo de Saída (`example.xsd`)
 
 ```xml
 <xs:schema xmlns_xs="http://www.w3.org/2001/XMLSchema">
