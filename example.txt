@@ -1,15 +1,20 @@
 {
   "serviceContextId": "123a654b-a1b2-c3d4-e5f6-12345f65f98e",
   "data": {
-    "Application.Id": "ABCD001122334455",
-    "Application.Decision.Name": "TesteNome",
-    "Application.Order": "08",
-    "Application.Client.DataClient[1].Concentrate.RegistrationData.Name": "AAAAAA",
-    "Application.Client.DataClient[1].Concentrate.Score.Value": "BBBBBB",
-    "Application.Client.DataClient[1].Concentrate.Score.Model": "CCCCCC",
-    "Application.Client.DataClient[2].Concentrate.RegistrationData.Name": "EEEEEE",
-    "Application.Client.DataClient[2].Concentrate.Score.Value": "FFFFFF",
-    "Application.Client.DataClient[2].Concentrate.Score.Model": "GGGGGG",
-    "Error.Message[1].IdMessage": "IIIIII"
+    "K-Application.Id": "ABCD001122334455",
+    "K-Application.Decision.Name": "TesteNome",
+    "K-Application.Order": "08",
+    "K-Application.Client.DataClient[1].Concentrate.RegistrationData.Name": "AAAAAA",
+    "K-Application.Client.DataClient[1].Concentrate.Score.Value": "BBBBBB",
+    "K-Application.Client.DataClient[1].Concentrate.Score.Model": "CCCCCC",
+    "K-Application.Client.DataClient[2].Concentrate.RegistrationData.Name": "EEEEEE",
+    "K-Application.Client.DataClient[2].Concentrate.Score.Value": "FFFFFF",
+    "K-Application.Client.DataClient[2].Concentrate.Score.Model": "GGGGGG",
+    "Error.Message[1].IdMessage": "HHHHHH",
+    "Key.A-set.Value[1]" : "IIIIII",
+    "Key.A-set.Value[2]" : "JJJJJJ",
+    "Key.A-set.Value[3]" : "KKKKKK",
+    "Key.A-set.Value[4]" : "LLLLLL",
+    "Key.A-set.Value[5]" : "MMMMMM"
   }
 }

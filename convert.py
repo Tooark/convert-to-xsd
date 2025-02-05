@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 
 # Função para converter um dicionário plano em um dicionário aninhado
 def convert_to_nested_dict(flat_dict):
+  # Inicializar o dicionário aninhado
   result = {}
 
   # Iterar sobre as chaves e valores do dicionário plano
@@ -25,10 +26,13 @@ def convert_to_nested_dict(flat_dict):
       if '[' in currentKey:
         # Dividir a chave em nome e índice
         currentKey, index = currentKey.replace(']', '').split('[')
+
+        # Converter o índice para inteiro
         index = int(index)
 
         # Verificar se a chave não está no dicionário
         if currentKey not in data:
+          # Adicionar uma nova lista
           data[currentKey] = []
 
         # Verificar se a lista não tem elementos suficientes
@@ -47,8 +51,21 @@ def convert_to_nested_dict(flat_dict):
         # Atualizar o dicionário atual
         data = data[currentKey]
 
-    # Adicionar o valor à última chave
-    data[keys[-1]] = value
+    # Verificar se a última chave contém um índice
+    if '[' in keys[-1]:
+      # Dividir a chave em nome e índice
+      currentKey, index = keys[-1].replace(']', '').split('[')
+
+      # Verificar se a chave não está no dicionário
+      if currentKey not in data:
+        # Adicionar uma nova lista
+        data[currentKey] = [value]
+      else:
+        # Adicionar o valor à lista
+        data[currentKey].append(value)
+    else:
+      # Adicionar o valor à última chave
+      data[keys[-1]] = value
 
   # Retornar o dicionário aninhado
   return result
@@ -57,7 +74,6 @@ def convert_to_nested_dict(flat_dict):
 def remove_empty_values(data):
   # Iterar sobre as chaves e valores do dicionário
   for key, value in data.items():
-
     # Verificar se o valor é uma lista
     if isinstance(value, list):
       # Iterar sobre os elementos da lista
