@@ -1,13 +1,15 @@
-# Conversor de JSON Plano para JSON Aninhado e XSD
+# Conversor de JSON Plano para JSON Aninhado, XML e XSD
 
-Este projeto contém um script Python que converte um arquivo JSON plano em um JSON com estrutura aninhada e, em seguida, gera um esquema XSD a partir do JSON aninhado.
+Este projeto contém um script Python que converte um arquivo JSON plano em um JSON com estrutura aninhada, gera um esquema XSD e um arquivo XML a partir do JSON aninhado.
 
 ## Estrutura do Projeto
 
 - `example.txt`: Arquivo de entrada contendo o JSON plano.
 - `convert.py`: Script Python que realiza a conversão.
+- `requirements.txt`: Arquivo de configuração das dependências do projeto.
 - `output.json`: Arquivo de saída contendo o JSON aninhado.
 - `output.xsd`: Arquivo de saída contendo o esquema XSD gerado.
+- `output.xml`: Arquivo de saída contendo o XML gerado.
 
 ## Funcionalidades
 
@@ -27,70 +29,92 @@ Esta função remove valores vazios de um dicionário.
 - **Parâmetros**:
   - `data` (dict): Dicionário a ser limpo.
 
-### Função `create_xsd_element`
+### Função `generate_xsd_element`
 
-Esta função cria um elemento XSD.
+Esta função gera um elemento XSD a partir de um dicionário.
 
 - **Parâmetros**:
   - `name` (str): Nome do elemento.
-  - `type_` (str): Tipo do elemento (padrão: "xs:string").
-  - `minOccurs` (str): Número mínimo de ocorrências (padrão: "0").
-  - `maxOccurs` (str): Número máximo de ocorrências (padrão: "1").
+  - `value` (any): Valor do elemento.
 - **Retorno**:
-  - `element` (Element): Elemento XSD criado.
+  - `xsd_element` (Element): Elemento XSD gerado.
 
-### Função `create_xsd_complex_type`
+### Função `get_xsd_type`
 
-Esta função cria um tipo complexo XSD.
+Esta função obtém o tipo XSD com base no tipo do valor.
 
 - **Parâmetros**:
-  - `name` (str): Nome do tipo complexo.
-  - `elements` (list): Lista de elementos a serem incluídos no tipo complexo.
+  - `value` (any): Valor para determinar o tipo XSD.
 - **Retorno**:
-  - `complex_type` (Element): Tipo complexo XSD criado.
+  - `type` (str): Tipo XSD correspondente.
+
+### Função `sanitize_element_name`
+
+Esta função substitui caracteres inválidos em nomes de elementos XML.
+
+- **Parâmetros**:
+  - `name` (str): Nome do elemento.
+- **Retorno**:
+  - `sanitized_name` (str): Nome do elemento sanitizado.
 
 ### Função `json_to_xsd`
 
-Esta função converte um JSON em um esquema XSD.
+Esta função converte um dicionário JSON em um esquema XSD.
 
 - **Parâmetros**:
-  - `json_data` (dict): Dicionário JSON a ser convertido.
-  - `root_name` (str): Nome do elemento raiz (padrão: "root").
+  - `data` (dict): Dicionário JSON a ser convertido.
 - **Retorno**:
-  - `elements` (list): Lista de elementos XSD gerados.
+  - `xsd_schema` (Element): Esquema XSD gerado.
+
+### Função `json_to_xml`
+
+Esta função converte um dicionário JSON em um XML.
+
+- **Parâmetros**:
+  - `element_name` (str): Nome do elemento raiz.
+  - `data` (dict): Dicionário JSON a ser convertido.
+- **Retorno**:
+  - `xml_element` (Element): Elemento XML gerado.
 
 ### Função `convert`
 
-A função converter do script realiza as seguintes etapas:
+A função `convert` do script realiza as seguintes etapas:
 
-1. Captura o nome do arquivo `example`.
-2. Carrega o conteúdo do arquivo `example.txt`.
+1. Captura o nome do arquivo.
+2. Carrega o conteúdo do arquivo JSON.
 3. Converte o conteúdo JSON em um dicionário.
 4. Converte o dicionário plano em um dicionário aninhado.
 5. Remove valores vazios do dicionário aninhado.
-6. Salva o JSON aninhado com o nome do arquivo original `example.json`.
-7. Cria o elemento raiz do XSD.
-8. Converte o JSON aninhado em elementos XSD.
-9. Adiciona os elementos XSD ao elemento raiz.
-10. Salva o esquema XSD com o nome do arquivo original `example.xsd`.
+6. Salva o JSON aninhado com o nome do arquivo original.
+7. Gera o esquema XSD a partir do JSON aninhado.
+8. Salva o esquema XSD com o nome do arquivo original.
+9. Converte o JSON aninhado em XML.
+10. Salva o XML com o nome do arquivo original.
 
-### Função `main`
+### Função `validate_xml_xsd`
 
-A função principal do script.
+Esta função valida um arquivo XML contra um arquivo XSD.
 
-Lista de arquivos a serem convertidos dentro da variável `listFiles` e executar o script.
+- **Parâmetros**:
+  - `file` (str): Nome do arquivo XML a ser validado.
 
 ## Como Executar
 
 1. Coloque o arquivo `example.txt` na mesma pasta que o script `convert.py`.
-2. Verifica se a lista de arquivos dentro da função principal esta com o `example.txt`.
-3. Execute o script `convert.py`:
+2. Verifique se a lista de arquivos dentro da função principal está com o `example.txt`.
+3. Instale as dependências listadas no `requirements.txt`:
+
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+4. Execute o script `convert.py`:
 
    ```sh
    python convert.py
    ```
 
-4. Verifique os arquivos `example.json` e `example.xsd` gerados na mesma pasta.
+5. Verifique os arquivos `example.json`, `example.xsd` e `example.xml` gerados na mesma pasta.
 
 ## Exemplo
 
@@ -229,13 +253,74 @@ Lista de arquivos a serem convertidos dentro da variável `listFiles` e executar
     </xs:sequence>
   </xs:complexType>
 </xs:schema>
+```
 
+### Arquivo de Saída (`example.xmd`)
+
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <serviceContextId>123a654b-a1b2-c3d4-e5f6-12345f65f98e</serviceContextId>
+  <data>
+    <K_Application>
+      <Id>ABCD001122334455</Id>
+      <Decision>
+        <Name>TesteNome</Name>
+      </Decision>
+      <Order>08</Order>
+      <Client>
+        <DataClient>
+          <DataClient_Item>
+            <Concentrate>
+              <RegistrationData>
+                <Name>AAAAAA</Name>
+              </RegistrationData>
+              <Score>
+                <Value>BBBBBB</Value>
+                <Model>CCCCCC</Model>
+              </Score>
+            </Concentrate>
+          </DataClient_Item>
+          <DataClient_Item>
+            <Concentrate>
+              <RegistrationData>
+                <Name>EEEEEE</Name>
+              </RegistrationData>
+              <Score>
+                <Value>FFFFFF</Value>
+                <Model>GGGGGG</Model>
+              </Score>
+            </Concentrate>
+          </DataClient_Item>
+        </DataClient>
+      </Client>
+    </K_Application>
+    <Error>
+      <Message>
+        <Message_Item>
+          <IdMessage>HHHHHH</IdMessage>
+        </Message_Item>
+      </Message>
+    </Error>
+    <Key>
+      <A_set>
+        <Value>
+          <Value_Item>IIIIII</Value_Item>
+          <Value_Item>JJJJJJ</Value_Item>
+          <Value_Item>KKKKKK</Value_Item>
+          <Value_Item>LLLLLL</Value_Item>
+          <Value_Item>MMMMMM</Value_Item>
+        </Value>
+      </A_set>
+    </Key>
+  </data>
+</root>
 ```
 
 ## Requisitos
 
 - Python 3.x
-- Biblioteca `xml.etree.ElementTree` (inclusa na biblioteca padrão do Python)
+- Biblioteca `lxml`
 
 ## Autor
 

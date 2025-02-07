@@ -1,5 +1,8 @@
 import json
 import xml.etree.ElementTree as ET
+from lxml import etree
+from lxml.etree import QName
+import re
 
 
 # Função para converter um dicionário plano em um dicionário aninhado
@@ -90,7 +93,7 @@ def remove_empty_values(data):
           else:
             # Chamar a função recursivamente
             remove_empty_values(currentValue)
-    
+
     # Verificar se o valor é um dicionário
     elif isinstance(value, dict):
       # Verificar se o dicionário está vazio
@@ -104,73 +107,124 @@ def remove_empty_values(data):
   # Retornar o dicionário
   return data
 
-# Função para criar um elemento XSD
-def create_xsd_element(name, type_="xs:string", minOccurs="0", maxOccurs="1"):
-  # Criar um elemento XSD
-  return ET.Element("xs:element", name=name, type=type_, minOccurs=minOccurs, maxOccurs=maxOccurs)
+# Função para gerar um elemento XSD a partir de um dicionário
+def generate_xsd_element(name, value):
+  xsd_element = etree.Element(QName("http://www.w3.org/2001/XMLSchema", 'element'), name=name)
 
-# Função para criar um tipo complexo XSD
-def create_xsd_complex_type(name, elements):
-  # Criar um tipo complexo XSD
-  complex_type = ET.Element("xs:complexType", name=name)
+  # Verificar se o valor é um dicionário
+  if isinstance(value, dict):
+    # Criar um tipo complexo e uma sequência
+    complex_type = etree.SubElement(xsd_element, QName("http://www.w3.org/2001/XMLSchema", 'complexType'))
+    sequence = etree.SubElement(complex_type, QName("http://www.w3.org/2001/XMLSchema", 'sequence'))
+    
+    # Iterar sobre as chaves e valores do dicionário
+    for key, val in value.items():
+      # Chamar a função recursivamente para cada chave e valor
+      child_element = generate_xsd_element(sanitize_element_name(key), val)
 
-  # Adicionar um elemento de sequência ao tipo complexo
-  sequence = ET.SubElement(complex_type, "xs:sequence")
+      # Adicionar o elemento à sequência
+      sequence.append(child_element)
 
-  # Iterar sobre os elementos e adiciona cada um deles à sequência
-  for element in elements:
-    # Adicionar o elemento à sequência
-    sequence.append(element)
+  # Verificar se o valor é uma lista
+  elif isinstance(value, list):
+    # Criar um tipo complexo e uma sequência
+    complex_type = etree.SubElement(xsd_element, QName("http://www.w3.org/2001/XMLSchema", 'complexType'))
+    sequence = etree.SubElement(complex_type, QName("http://www.w3.org/2001/XMLSchema", 'sequence'))
 
-  # Retornar o tipo complexo
-  return complex_type
+    # Verifica se a lista não está vazia
+    if value:
+      # Cria um elemento para o item da lista
+      child_element = generate_xsd_element(sanitize_element_name(name) + '_Item', value[0])
 
-# Função para converter um JSON em um XSD
-def json_to_xsd(json_data, root_name='root'):
-  elements = []
+      # Define minOccurs como 0 e maxOccurs como unbounded
+      child_element.set('minOccurs', '0')
+      child_element.set('maxOccurs', 'unbounded')
 
-  # Iterar sobre as chaves e valores do JSON
-  for key, value in json_data.items():
-    # Substituir hífens por underscores
-    key = key.replace("-", "_")
+      # Adiciona o elemento à sequência
+      sequence.append(child_element)
 
-    # Verificar se o valor é um dicionário
-    if isinstance(value, dict):
-      # Chamar a função recursivamente
-      sub_elements = json_to_xsd(value, root_name=key)
+  # É um valor simples
+  else:
+    # Define o tipo do elemento com base no tipo do valor
+    xsd_element.set('type', get_xsd_type(value))
 
-      # Criar um tipo complexo
-      complex_type = create_xsd_complex_type(key, sub_elements)
+    # Define minOccurs e maxOccurs para 0 e 1
+    xsd_element.set('minOccurs', '0')
+    xsd_element.set('maxOccurs', '1')
 
-      # Adicionar um elemento com o tipo complexo
-      elements.append(create_xsd_element(key, type_="xs:complexType", minOccurs="0", maxOccurs="1"))
-      elements.append(complex_type)
+  # Retorna o elemento XSD
+  return xsd_element
 
-    # Verificar se o valor é uma lista
-    elif isinstance(value, list):
-      # Verificar se a lista está vazia
-      if len(value) > 0 and isinstance(value[0], dict):
-        # Chamar a função recursivamente
-        sub_elements = json_to_xsd(value[0], root_name=key)
+# Função para obter o tipo XSD com base no tipo do valor
+def get_xsd_type(value):
+  if isinstance(value, int):
+    return 'xs:integer'
+  elif isinstance(value, float):
+    return 'xs:decimal'
+  elif isinstance(value, bool):
+    return 'xs:boolean'
+  elif isinstance(value, str):
+    return 'xs:string'
+  elif value is None:
+    return 'xs:string'  # Ou xs:nil
+  else:
+    return 'xs:string'
 
-        # Criar um tipo complexo
-        complex_type = create_xsd_complex_type(key, sub_elements)
+# Função para substituir caracteres inválidos em nomes de elementos XML
+def sanitize_element_name(name):
+  # Substitui caracteres inválidos em nomes de elementos XML
+  return re.sub(r'[^a-zA-Z0-9_]', '_', name)
 
-        # Adicionar um elemento com o tipo complexo
-        elements.append(create_xsd_element(key, type_="xs:complexType", minOccurs="0", maxOccurs="unbounded"))
-        elements.append(complex_type)
-      else:
-        # Adicionar um elemento com o tipo string
-        elements.append(create_xsd_element(key, type_="xs:string", minOccurs="0", maxOccurs="unbounded"))
-    else:
-      # Adicionar um elemento
-      elements.append(create_xsd_element(key))
+# Função para construir o esquema XSD
+def json_to_xsd(data):
+  # Cria o elemento raiz do esquema XSD
+  xsd_schema = etree.Element(QName("http://www.w3.org/2001/XMLSchema", 'schema'))
 
-  # Criar um tipo complexo para o elemento raiz
-  return elements
+  # Gera o elemento XSD para o dicionário de dados
+  root_element = generate_xsd_element('root', data)
 
-# Função para converter um arquivo TXT em um arquivo JSON com estrutura aninhada
+  # Adiciona o elemento raiz ao esquema XSD
+  xsd_schema.append(root_element)
+
+  # Retorna o esquema XSD
+  return xsd_schema
+
+# Função para converter um dicionário em XML
+def json_to_xml(element_name, data):
+  # Cria um elemento XML com o nome fornecido
+  xml_element = ET.Element(sanitize_element_name(element_name))
+
+  # Verifica o tipo de dado
+  if isinstance(data, dict):
+    # Itera sobre as chaves e valores do dicionário
+    for key, val in data.items():
+      # Chama a função recursivamente para cada chave e valor
+      child = json_to_xml(key, val)
+
+      # Adiciona o elemento filho ao elemento pai
+      xml_element.append(child)
+
+  # Verifica se é uma lista
+  elif isinstance(data, list):
+    # Itera sobre os itens da lista
+    for item in data:
+      # Cria um elemento para o item da lista
+      child = json_to_xml(element_name + '_Item', item)
+
+      # Adiciona o elemento filho ao elemento pai
+      xml_element.append(child)
+
+  # É um valor simples
+  else:
+    # Define o texto do elemento como
+    xml_element.text = str(data) if data is not None else ''
+
+  # Retorna o elemento XML
+  return xml_element
+
+# Função para converter um arquivo JSON flat em um arquivo JSON aninhada, gerar um arquivo XSD e um arquivo XML
 def convert(fileName):
+  # Definir o nome do arquivo de saída
   output = fileName.split('.')[0]
 
   # Carregar o conteúdo do arquivo
@@ -195,23 +249,46 @@ def convert(fileName):
 
   print('O ' + fileName + ' foi convertido com sucesso para ' + output + '.json')
 
-  # Cria o elemento root do XSD
-  xsd_root = ET.Element("xs:schema", xmlns_xs="http://www.w3.org/2001/XMLSchema")
+  # Gerar o XSD
+  xsd_tree = json_to_xsd(nested_dict)
+  xsd_str = etree.tostring(xsd_tree, pretty_print=True,encoding='utf-8', xml_declaration=True).decode('utf-8')
 
-  # Converte o JSON aninhado em elementos XSD
-  xsd_elements = json_to_xsd(nested_dict)
-
-  # Adiciona os elementos XSD ao root
-  for elem in xsd_elements:
-    xsd_root.append(elem)
-
-  # Cria a árvore XSD
-  xsd_tree = ET.ElementTree(xsd_root)
-
-  # Salva a árvore XSD em um arquivo
-  xsd_tree.write(output + '.xsd', encoding='utf-8', xml_declaration=True)
+  # Salvar o XSD em um arquivo
+  with open(output + '.xsd', 'w', encoding='utf-8') as f:
+    f.write(xsd_str)
 
   print('O ' + fileName + ' foi convertido com sucesso para ' + output + '.xsd')
+
+  # Converter o JSON em XML
+  xml_root = json_to_xml('root', nested_dict)
+  xml_tree = ET.ElementTree(xml_root)
+
+  # Salvar o XML em um arquivo
+  xml_tree.write(output + '.xml', encoding='utf-8', xml_declaration=True)
+
+# Função para validar um arquivo XML contra um arquivo XSD
+def validate_xml_xsd(file):
+  # Obter o nome do arquivo sem a extensão
+  fileName = file.split('.')[0]
+
+  # Definir o nome dos arquivos XSD e XML
+  xsd_file = fileName + '.xsd'
+  xml_file = fileName + '.xml'
+
+  # Validar o XML contra o XSD
+  xmlschema_doc = etree.parse(xsd_file)
+  xmlschema = etree.XMLSchema(xmlschema_doc)
+  xml_doc = etree.parse(xml_file)
+
+  # Verificar se o XML é válido
+  if xmlschema.validate(xml_doc):
+    print('O arquivo ' + xml_file + ' foi validado com sucesso contra o arquivo ' + xsd_file)
+  else:
+    print('O arquivo ' + xml_file + ' não foi validado com sucesso contra o arquivo ' + xsd_file + '. Erros encontrados:')
+
+    # Exibir os erros
+    for error in xmlschema.error_log:
+      print(error.message)
 
 
 # Função principal
@@ -221,4 +298,8 @@ if __name__ == '__main__':
 
   # Iterar sobre os arquivos
   for file in listFiles:
+    # Converter o arquivo
     convert(file)
+
+    # Validar o arquivo XML contra o arquivo XSD
+    validate_xml_xsd(file)
