@@ -11,6 +11,7 @@ Este projeto contém um script Python que converte um arquivo JSON plano em um J
 - `example.xml`: Arquivo de saída contendo o XML gerado.
 - `example.xsd`: Arquivo de saída contendo o esquema XSD gerado.
 - `example_SAP.xsd`: Arquivo de saída contendo o esquema XSD com substituição de prefixo para `xsd:` gerado.
+- `change_name_example.json`: Arquivo de mapeamento de chaves que foram alteradas.
 
 ## Funcionalidades
 
@@ -519,6 +520,15 @@ Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista d
     </xsd:complexType>
   </xsd:element>
 </xsd:schema>
+```
+
+### Arquivo de Saída (`change_name_example.json`)
+
+```json
+{
+  "A-set": "A_set",
+  "K-Application": "K_Application"
+}
 ```
 
 ## Requisitos
