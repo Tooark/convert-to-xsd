@@ -1,4 +1,5 @@
 import json
+import xml.dom.minidom
 import xml.etree.ElementTree as ET
 from lxml import etree
 from lxml.etree import QName
@@ -108,7 +109,7 @@ def remove_empty_values(data):
   return data
 
 # Função para gerar um elemento XSD a partir de um dicionário
-def generate_xsd_element(name, value):
+def generate_xsd_element(name, value, fileName):
   xsd_element = etree.Element(QName("http://www.w3.org/2001/XMLSchema", 'element'), name=name)
 
   # Verificar se o valor é um dicionário
@@ -120,28 +121,36 @@ def generate_xsd_element(name, value):
     # Iterar sobre as chaves e valores do dicionário
     for key, val in value.items():
       # Chamar a função recursivamente para cada chave e valor
-      child_element = generate_xsd_element(sanitize_element_name(key), val)
+      child_element = generate_xsd_element(sanitize_element_name(key, fileName), val, fileName)
 
       # Adicionar o elemento à sequência
       sequence.append(child_element)
 
   # Verificar se o valor é uma lista
   elif isinstance(value, list):
-    # Criar um tipo complexo e uma sequência
-    complex_type = etree.SubElement(xsd_element, QName("http://www.w3.org/2001/XMLSchema", 'complexType'))
-    sequence = etree.SubElement(complex_type, QName("http://www.w3.org/2001/XMLSchema", 'sequence'))
-
     # Verifica se a lista não está vazia
     if value:
-      # Cria um elemento para o item da lista
-      child_element = generate_xsd_element(sanitize_element_name(name) + '_Item', value[0])
+      # Verifica se o primeiro item da lista é um dicionário
+      if(isinstance(value[0], dict)):
+        # Criar um tipo complexo e uma sequência
+        complex_type = etree.SubElement(xsd_element, QName("http://www.w3.org/2001/XMLSchema", 'complexType'))
+        sequence = etree.SubElement(complex_type, QName("http://www.w3.org/2001/XMLSchema", 'sequence'))
+
+        # Iterar sobre as chaves e valores do dicionário
+        for key, val in value[0].items():
+          # Chamar a função recursivamente para cada chave e valor
+          child_element = generate_xsd_element(sanitize_element_name(key, fileName), val, fileName)
+
+          # Adicionar o elemento à sequência
+          sequence.append(child_element)
+
+      else:
+        # Define o tipo do elemento com base no tipo do primeiro item da lista
+        xsd_element.set('type', get_xsd_type(value[0]))
 
       # Define minOccurs como 0 e maxOccurs como unbounded
-      child_element.set('minOccurs', '0')
-      child_element.set('maxOccurs', 'unbounded')
-
-      # Adiciona o elemento à sequência
-      sequence.append(child_element)
+      xsd_element.set('minOccurs', '0')
+      xsd_element.set('maxOccurs', 'unbounded')
 
   # É um valor simples
   else:
@@ -171,17 +180,49 @@ def get_xsd_type(value):
     return 'xs:string'
 
 # Função para substituir caracteres inválidos em nomes de elementos XML
-def sanitize_element_name(name):
+def sanitize_element_name(name, fileName='change_name.json'):
   # Substitui caracteres inválidos em nomes de elementos XML
-  return re.sub(r'[^a-zA-Z0-9_]', '_', name)
+  new_name = re.sub(r'[^a-zA-Z0-9_]', '_', name)
+
+  # Verifica se o nome começa com um número
+  if re.match(r'^\d', new_name):
+    new_name = '_' + new_name
+
+  # Verifica se o nome foi alterado
+  if name != new_name:
+    # Carregar o conteúdo do arquivo
+    with open(fileName, 'r') as file:
+      json_content = file.read()
+
+    # Converta o conteúdo JSON em um dicionário
+    change_name = json.loads(json_content)
+
+    # Adicione o nome original e o novo nome ao dicionário
+    change_name[name] = new_name
+
+    # Converta o dicionário aninhado para uma string JSON
+    json_content = json.dumps(change_name, indent=2, ensure_ascii=False, sort_keys=True)
+
+    # Salve a string JSON em um arquivo
+    with open(fileName, 'w') as file:
+      file.write(json_content)
+
+    # print('O nome do elemento foi alterado de ' + name + ' para ' + new_name)
+
+  # Retorna o novo nome
+  return new_name
+
+# Função para substituir xs: por xsd:
+def replace_prefix_xsd(content):
+  return re.sub(r'\bxs:', 'xsd:', content)
 
 # Função para construir o esquema XSD
-def json_to_xsd(data):
+def json_to_xsd(data, fileName):
   # Cria o elemento raiz do esquema XSD
   xsd_schema = etree.Element(QName("http://www.w3.org/2001/XMLSchema", 'schema'))
 
   # Gera o elemento XSD para o dicionário de dados
-  root_element = generate_xsd_element('root', data)
+  root_element = generate_xsd_element('root', data, fileName)
 
   # Adiciona o elemento raiz ao esquema XSD
   xsd_schema.append(root_element)
@@ -189,34 +230,33 @@ def json_to_xsd(data):
   # Retorna o esquema XSD
   return xsd_schema
 
-# Função para converter um dicionário em XML
-def json_to_xml(element_name, data):
+# Função para converter um dicionário em um elemento XML
+def json_to_xml(element_name, data, fileName):
   # Cria um elemento XML com o nome fornecido
-  xml_element = ET.Element(sanitize_element_name(element_name))
+  xml_element = ET.Element(sanitize_element_name(element_name, fileName))
 
-  # Verifica o tipo de dado
+ # Verifica se o dado é um dicionário
   if isinstance(data, dict):
     # Itera sobre as chaves e valores do dicionário
     for key, val in data.items():
-      # Chama a função recursivamente para cada chave e valor
-      child = json_to_xml(key, val)
-
-      # Adiciona o elemento filho ao elemento pai
-      xml_element.append(child)
-
-  # Verifica se é uma lista
-  elif isinstance(data, list):
-    # Itera sobre os itens da lista
-    for item in data:
-      # Cria um elemento para o item da lista
-      child = json_to_xml(element_name + '_Item', item)
-
-      # Adiciona o elemento filho ao elemento pai
-      xml_element.append(child)
+      # Verifica se o valor é uma lista
+      if(isinstance(val, list)):
+        # Itera sobre os itens da lista
+        for item in val:
+          # Chama a função recursivamente para cada chave e valor
+          child = json_to_xml(key, item, fileName)
+          # Adiciona o elemento filho ao elemento pai
+          xml_element.append(child)
+      else:
+        # Chama a função recursivamente para cada chave e valor
+        child = json_to_xml(key, val, fileName)
+        
+        # Adiciona o elemento filho ao elemento pai
+        xml_element.append(child)
 
   # É um valor simples
   else:
-    # Define o texto do elemento como
+    # Define o texto do elemento como o valor
     xml_element.text = str(data) if data is not None else ''
 
   # Retorna o elemento XML
@@ -226,6 +266,13 @@ def json_to_xml(element_name, data):
 def convert(fileName):
   # Definir o nome do arquivo de saída
   output = fileName.split('.')[0]
+
+  # Definir o nome do arquivo de alteração de nome
+  changeFileName = 'change_name_' + output + '.json'
+
+  # Cria o arquivo de alteração de nome
+  with open(changeFileName, 'w') as file:
+    file.write('{}')  # Inicializa com um JSON vazio
 
   # Carregar o conteúdo do arquivo
   with open(fileName, 'r') as file:
@@ -241,7 +288,7 @@ def convert(fileName):
   nested_dict = remove_empty_values(nested_dict)
 
   # Converta o dicionário aninhado para uma string JSON
-  json_content = json.dumps(nested_dict, indent=4, ensure_ascii=False)
+  json_content = json.dumps(nested_dict, indent=4, ensure_ascii=False, sort_keys=True)
 
   # Salve a string JSON em um arquivo
   with open(output + '.json', 'w') as file:
@@ -250,7 +297,7 @@ def convert(fileName):
   print('O ' + fileName + ' foi convertido com sucesso para ' + output + '.json')
 
   # Gerar o XSD
-  xsd_tree = json_to_xsd(nested_dict)
+  xsd_tree = json_to_xsd(json.loads(json_content), changeFileName)
   xsd_str = etree.tostring(xsd_tree, pretty_print=True,encoding='utf-8', xml_declaration=True).decode('utf-8')
 
   # Salvar o XSD em um arquivo
@@ -259,12 +306,28 @@ def convert(fileName):
 
   print('O ' + fileName + ' foi convertido com sucesso para ' + output + '.xsd')
 
-  # Converter o JSON em XML
-  xml_root = json_to_xml('root', nested_dict)
-  xml_tree = ET.ElementTree(xml_root)
+  # Substituir xs: por xsd:
+  xsd_str = replace_prefix_xsd(xsd_str)
 
+  # Salvar o XSD em um arquivo com substituição de prefixo para o SAP
+  with open(output + '_SAP.xsd', 'w', encoding='utf-8') as f:
+    f.write(xsd_str)
+
+  print('O ' + fileName + ' foi convertido com sucesso para ' + output + '_SAP.xsd')
+
+  # Converter o JSON em XML
+  xml_root = json_to_xml('root', json.loads(json_content), changeFileName)
+
+   # Salvar o XML em um arquivo com indentação
+  xml_str = ET.tostring(xml_root, encoding='utf-8', xml_declaration=True)
+  xml_pretty_str = xml.dom.minidom.parseString(xml_str).toprettyxml(indent="  ")  
+  
   # Salvar o XML em um arquivo
-  xml_tree.write(output + '.xml', encoding='utf-8', xml_declaration=True)
+  # xml_tree.write(output + '.xml', encoding='utf-8', xml_declaration=True)
+  with open(output + '.xml', 'w', encoding='utf-8') as f:
+    f.write(xml_pretty_str)
+
+  print('O ' + fileName + ' foi convertido com sucesso para ' + output + '.xml')
 
 # Função para validar um arquivo XML contra um arquivo XSD
 def validate_xml_xsd(file):
@@ -288,7 +351,9 @@ def validate_xml_xsd(file):
 
     # Exibir os erros
     for error in xmlschema.error_log:
-      print(error.message)
+      print("ERROR ON LINE %s: %s" % (error.line, error.message.encode("utf-8")))
+      # print(error.message)
+      print()
 
 
 # Função principal
@@ -303,3 +368,5 @@ if __name__ == '__main__':
 
     # Validar o arquivo XML contra o arquivo XSD
     validate_xml_xsd(file)
+
+    print()

@@ -174,3 +174,11 @@ cython_debug/
 
 # Arquivos de configuração do editor
 .vscode/
+
+# Arquivos de dados exceto o exemplo
+*.txt
+!example.txt
+!requirements.txt
+*.json
+*.xml
+*.xsd

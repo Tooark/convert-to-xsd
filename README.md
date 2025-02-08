@@ -1,15 +1,16 @@
 # Conversor de JSON Plano para JSON Aninhado, XML e XSD
 
-Este projeto contém um script Python que converte um arquivo JSON plano em um JSON com estrutura aninhada, gera um esquema XSD e um arquivo XML a partir do JSON aninhado.
+Este projeto contém um script Python que converte um arquivo JSON plano em um JSON com estrutura aninhada, um arquivo XML, um esquema XSD e um esquema XSD para SAP a partir do JSON aninhado.
 
 ## Estrutura do Projeto
 
 - `example.txt`: Arquivo de entrada contendo o JSON plano.
 - `convert.py`: Script Python que realiza a conversão.
 - `requirements.txt`: Arquivo de configuração das dependências do projeto.
-- `output.json`: Arquivo de saída contendo o JSON aninhado.
-- `output.xsd`: Arquivo de saída contendo o esquema XSD gerado.
-- `output.xml`: Arquivo de saída contendo o XML gerado.
+- `example.json`: Arquivo de saída contendo o JSON aninhado.
+- `example.xml`: Arquivo de saída contendo o XML gerado.
+- `example.xsd`: Arquivo de saída contendo o esquema XSD gerado.
+- `example_SAP.xsd`: Arquivo de saída contendo o esquema XSD com substituição de prefixo para `xsd:` gerado.
 
 ## Funcionalidades
 
@@ -28,6 +29,8 @@ Esta função remove valores vazios de um dicionário.
 
 - **Parâmetros**:
   - `data` (dict): Dicionário a ser limpo.
+- **Retorno**:
+  - `data` (dict): Dicionário limpo.
 
 ### Função `generate_xsd_element`
 
@@ -36,6 +39,7 @@ Esta função gera um elemento XSD a partir de um dicionário.
 - **Parâmetros**:
   - `name` (str): Nome do elemento.
   - `value` (any): Valor do elemento.
+  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas.
 - **Retorno**:
   - `xsd_element` (Element): Elemento XSD gerado.
 
@@ -54,8 +58,9 @@ Esta função substitui caracteres inválidos em nomes de elementos XML.
 
 - **Parâmetros**:
   - `name` (str): Nome do elemento.
+  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas. Parâmetro padrão é `change_name.json`.
 - **Retorno**:
-  - `sanitized_name` (str): Nome do elemento sanitizado.
+  - `new_name` (str): Nome do elemento sanitizado.
 
 ### Função `json_to_xsd`
 
@@ -63,6 +68,7 @@ Esta função converte um dicionário JSON em um esquema XSD.
 
 - **Parâmetros**:
   - `data` (dict): Dicionário JSON a ser convertido.
+  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas.
 - **Retorno**:
   - `xsd_schema` (Element): Esquema XSD gerado.
 
@@ -73,6 +79,7 @@ Esta função converte um dicionário JSON em um XML.
 - **Parâmetros**:
   - `element_name` (str): Nome do elemento raiz.
   - `data` (dict): Dicionário JSON a ser convertido.
+  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas.
 - **Retorno**:
   - `xml_element` (Element): Elemento XML gerado.
 
@@ -81,27 +88,40 @@ Esta função converte um dicionário JSON em um XML.
 A função `convert` do script realiza as seguintes etapas:
 
 1. Captura o nome do arquivo.
-2. Carrega o conteúdo do arquivo JSON.
+2. Carrega o conteúdo do arquivo JSON flat ou aninhado.
 3. Converte o conteúdo JSON em um dicionário.
 4. Converte o dicionário plano em um dicionário aninhado.
 5. Remove valores vazios do dicionário aninhado.
 6. Salva o JSON aninhado com o nome do arquivo original.
 7. Gera o esquema XSD a partir do JSON aninhado.
 8. Salva o esquema XSD com o nome do arquivo original.
-9. Converte o JSON aninhado em XML.
-10. Salva o XML com o nome do arquivo original.
+9. Altera o prefixo de `xs:` para `xsd:`.
+10. Salva o esquema XSD com o nome do arquivo original com adicional de `_SAP`.
+11. Converte o JSON aninhado em XML.
+12. Salva o XML com o nome do arquivo original.
+
+- **Parâmetros**:
+  - `fileName` (str): Nome do arquivo JSON flat ou aninhado.
 
 ### Função `validate_xml_xsd`
 
 Esta função valida um arquivo XML contra um arquivo XSD.
 
+1. Carrega o arquivo XML.
+2. Carrega o arquivo XSD.
+3. Valida o arquivo XML contra o arquivo XSD.
+
 - **Parâmetros**:
-  - `file` (str): Nome do arquivo XML a ser validado.
+  - `file` (str): Nome do arquivo XML e XSD a ser validado.
+
+### Função Principal
+
+Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista de arquivos a serem validados.
 
 ## Como Executar
 
-1. Coloque o arquivo `example.txt` na mesma pasta que o script `convert.py`.
-2. Verifique se a lista de arquivos dentro da função principal está com o `example.txt`.
+1. Coloque os arquivos que queira converter na mesma pasta que o script `convert.py`.
+2. Adicione os nomes dos arquivos com as extensões na variável `listFiles` dentro da função principal.
 3. Instale as dependências listadas no `requirements.txt`:
 
    ```sh
@@ -114,7 +134,7 @@ Esta função valida um arquivo XML contra um arquivo XSD.
    python convert.py
    ```
 
-5. Verifique os arquivos `example.json`, `example.xsd` e `example.xml` gerados na mesma pasta.
+5. Verifique os arquivos de saída `*.json`, `*.xml`, `*.xsd` e `*_SAP.xsd` gerados na mesma pasta.
 
 ## Exemplo
 
@@ -124,16 +144,23 @@ Esta função valida um arquivo XML contra um arquivo XSD.
 {
   "serviceContextId": "123a654b-a1b2-c3d4-e5f6-12345f65f98e",
   "data": {
-    "Application.Id": "ABCD001122334455",
-    "Application.Decision.Name": "TesteNome",
-    "Application.Order": "08",
-    "Application.Client.DataClient[1].Concentrate.RegistrationData.Name": "AAAAAA",
-    "Application.Client.DataClient[1].Concentrate.Score.Value": "BBBBBB",
-    "Application.Client.DataClient[1].Concentrate.Score.Model": "CCCCCC",
-    "Application.Client.DataClient[2].Concentrate.RegistrationData.Name": "EEEEEE",
-    "Application.Client.DataClient[2].Concentrate.Score.Value": "FFFFFF",
-    "Application.Client.DataClient[2].Concentrate.Score.Model": "GGGGGG",
-    "Error.Message[1].IdMessage": "IIIIII"
+    "K-Application.Id": "ABCD001122334455",
+    "K-Application.Decision.Name": "TesteNome",
+    "K-Application.Order": "08",
+    "K-Application.Client.DataClient[1].Concentrate.RegistrationData.Name": "AAAAAA",
+    "K-Application.Client.DataClient[1].Concentrate.Score.Value": "BBBBBB",
+    "K-Application.Client.DataClient[1].Dist.Score.Model[1]": "CCCCCC",
+    "K-Application.Client.DataClient[1].Dist.Score.Model[2]": "DDDDDD",
+    "K-Application.Client.DataClient[2].Concentrate.RegistrationData.Name": "EEEEEE",
+    "K-Application.Client.DataClient[2].Concentrate.Score.Value": "FFFFFF",
+    "K-Application.Client.DataClient[2].Dist.Score.Model[1]": "GGGGGG",
+    "K-Application.Client.DataClient[2].Dist.Score.Model[2]": "HHHHHH",
+    "Error.Message[1].IdMessage": "HHHHHH",
+    "Key.A-set.Value[1]" : "IIIIII",
+    "Key.A-set.Value[2]" : "JJJJJJ",
+    "Key.A-set.Value[3]" : "KKKKKK",
+    "Key.A-set.Value[4]" : "LLLLLL",
+    "Key.A-set.Value[5]" : "MMMMMM"
   }
 }
 ```
@@ -142,14 +169,15 @@ Esta função valida um arquivo XML contra um arquivo XSD.
 
 ```json
 {
-  "serviceContextId": "123a654b-a1b2-c3d4-e5f6-12345f65f98e",
   "data": {
-    "Application": {
-      "Id": "ABCD001122334455",
-      "Decision": {
-        "Name": "TesteNome"
-      },
-      "Order": "08",
+    "Error": {
+      "Message": [
+        {
+          "IdMessage": "HHHHHH"
+        }
+      ]
+    },
+    "K-Application": {
       "Client": {
         "DataClient": [
           {
@@ -158,8 +186,15 @@ Esta função valida um arquivo XML contra um arquivo XSD.
                 "Name": "AAAAAA"
               },
               "Score": {
-                "Value": "BBBBBB",
-                "Model": "CCCCCC"
+                "Value": "BBBBBB"
+              }
+            },
+            "Dist": {
+              "Score": {
+                "Model": [
+                  "CCCCCC",
+                  "DDDDDD"
+                ]
               }
             }
           },
@@ -169,152 +204,321 @@ Esta função valida um arquivo XML contra um arquivo XSD.
                 "Name": "EEEEEE"
               },
               "Score": {
-                "Value": "FFFFFF",
-                "Model": "GGGGGG"
+                "Value": "FFFFFF"
+              }
+            },
+            "Dist": {
+              "Score": {
+                "Model": [
+                  "GGGGGG",
+                  "HHHHHH"
+                ]
               }
             }
           }
         ]
-      }
+      },
+      "Decision": {
+        "Name": "TesteNome"
+      },
+      "Id": "ABCD001122334455",
+      "Order": "08"
     },
-    "Error": {
-      "Message": [
-        {
-          "IdMessage": "IIIIII"
-        }
-      ]
+    "Key": {
+      "A-set": {
+        "Value": [
+          "IIIIII",
+          "JJJJJJ",
+          "KKKKKK",
+          "LLLLLL",
+          "MMMMMM"
+        ]
+      }
     }
-  }
+  },
+  "serviceContextId": "123a654b-a1b2-c3d4-e5f6-12345f65f98e"
 }
+```
+
+### Arquivo de Saída (`example.xml`)
+
+```xml
+<?xml version="1.0"?>
+<root>
+  <data>
+    <Error>
+      <Message>
+        <IdMessage>HHHHHH</IdMessage>
+      </Message>
+    </Error>
+    <K_Application>
+      <Client>
+        <DataClient>
+          <Concentrate>
+            <RegistrationData>
+              <Name>AAAAAA</Name>
+            </RegistrationData>
+            <Score>
+              <Value>BBBBBB</Value>
+            </Score>
+          </Concentrate>
+          <Dist>
+            <Score>
+              <Model>CCCCCC</Model>
+              <Model>DDDDDD</Model>
+            </Score>
+          </Dist>
+        </DataClient>
+        <DataClient>
+          <Concentrate>
+            <RegistrationData>
+              <Name>EEEEEE</Name>
+            </RegistrationData>
+            <Score>
+              <Value>FFFFFF</Value>
+            </Score>
+          </Concentrate>
+          <Dist>
+            <Score>
+              <Model>GGGGGG</Model>
+              <Model>HHHHHH</Model>
+            </Score>
+          </Dist>
+        </DataClient>
+      </Client>
+      <Decision>
+        <Name>TesteNome</Name>
+      </Decision>
+      <Id>ABCD001122334455</Id>
+      <Order>08</Order>
+    </K_Application>
+    <Key>
+      <A_set>
+        <Value>IIIIII</Value>
+        <Value>JJJJJJ</Value>
+        <Value>KKKKKK</Value>
+        <Value>LLLLLL</Value>
+        <Value>MMMMMM</Value>
+      </A_set>
+    </Key>
+  </data>
+  <serviceContextId>123a654b-a1b2-c3d4-e5f6-12345f65f98e</serviceContextId>
+</root>
 ```
 
 ### Arquivo de Saída (`example.xsd`)
 
 ```xml
-<xs:schema xmlns_xs="http://www.w3.org/2001/XMLSchema">
-  <xs:element name="serviceContextId" type="xs:string" minOccurs="0" maxOccurs="1" />
-  <xs:element name="data" type="xs:complexType" minOccurs="0" maxOccurs="1" />
-  <xs:complexType name="data">
-    <xs:sequence>
-      <xs:element name="Application" type="xs:complexType" minOccurs="0" maxOccurs="1" />
-      <xs:complexType name="Application">
-        <xs:sequence>
-          <xs:element name="Id" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="Decision" type="xs:complexType" minOccurs="0" maxOccurs="1" />
-          <xs:complexType name="Decision">
+<?xml version='1.0' encoding='utf-8'?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="root">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="data">
+          <xs:complexType>
             <xs:sequence>
-              <xs:element name="Name" type="xs:string" minOccurs="0" maxOccurs="1" />
-            </xs:sequence>
-          </xs:complexType>
-          <xs:element name="Order" type="xs:string" minOccurs="0" maxOccurs="1" />
-          <xs:element name="Client" type="xs:complexType" minOccurs="0" maxOccurs="1" />
-          <xs:complexType name="Client">
-            <xs:sequence>
-              <xs:element name="DataClient" type="xs:complexType" minOccurs="0"
-                maxOccurs="unbounded" />
-              <xs:complexType name="DataClient">
-                <xs:sequence>
-                  <xs:element name="Concentrate" type="xs:complexType" minOccurs="0" maxOccurs="1" />
-                  <xs:complexType name="Concentrate">
-                    <xs:sequence>
-                      <xs:element name="RegistrationData" type="xs:complexType" minOccurs="0"
-                        maxOccurs="1" />
-                      <xs:complexType name="RegistrationData">
+              <xs:element name="Error">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Message" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="IdMessage" type="xs:string" minOccurs="0" maxOccurs="1" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="K_Application">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Client">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="DataClient" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="Concentrate">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="RegistrationData">
+                                        <xs:complexType>
+                                          <xs:sequence>
+                                            <xs:element name="Name" type="xs:string" minOccurs="0" maxOccurs="1" />
+                                          </xs:sequence>
+                                        </xs:complexType>
+                                      </xs:element>
+                                      <xs:element name="Score">
+                                        <xs:complexType>
+                                          <xs:sequence>
+                                            <xs:element name="Value" type="xs:string" minOccurs="0" maxOccurs="1" />
+                                          </xs:sequence>
+                                        </xs:complexType>
+                                      </xs:element>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="Dist">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="Score">
+                                        <xs:complexType>
+                                          <xs:sequence>
+                                            <xs:element name="Model" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+                                          </xs:sequence>
+                                        </xs:complexType>
+                                      </xs:element>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Decision">
+                      <xs:complexType>
                         <xs:sequence>
                           <xs:element name="Name" type="xs:string" minOccurs="0" maxOccurs="1" />
                         </xs:sequence>
                       </xs:complexType>
-                      <xs:element name="Score" type="xs:complexType" minOccurs="0" maxOccurs="1" />
-                      <xs:complexType name="Score">
+                    </xs:element>
+                    <xs:element name="Id" type="xs:string" minOccurs="0" maxOccurs="1" />
+                    <xs:element name="Order" type="xs:string" minOccurs="0" maxOccurs="1" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="Key">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="A_set">
+                      <xs:complexType>
                         <xs:sequence>
-                          <xs:element name="Value" type="xs:string" minOccurs="0" maxOccurs="1" />
-                          <xs:element name="Model" type="xs:string" minOccurs="0" maxOccurs="1" />
+                          <xs:element name="Value" type="xs:string" minOccurs="0"
+                            maxOccurs="unbounded" />
                         </xs:sequence>
                       </xs:complexType>
-                    </xs:sequence>
-                  </xs:complexType>
-                </xs:sequence>
-              </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
             </xs:sequence>
           </xs:complexType>
-        </xs:sequence>
-      </xs:complexType>
-      <xs:element name="Error" type="xs:complexType" minOccurs="0" maxOccurs="1" />
-      <xs:complexType name="Error">
-        <xs:sequence>
-          <xs:element name="Message" type="xs:complexType" minOccurs="0" maxOccurs="unbounded" />
-          <xs:complexType name="Message">
-            <xs:sequence>
-              <xs:element name="IdMessage" type="xs:string" minOccurs="0" maxOccurs="1" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:sequence>
-      </xs:complexType>
-    </xs:sequence>
-  </xs:complexType>
+        </xs:element>
+        <xs:element name="serviceContextId" type="xs:string" minOccurs="0" maxOccurs="1" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
 </xs:schema>
 ```
 
-### Arquivo de Saída (`example.xmd`)
+### Arquivo de Saída (`example_SAP.xsd`)
 
 ```xml
 <?xml version='1.0' encoding='utf-8'?>
-<root>
-  <serviceContextId>123a654b-a1b2-c3d4-e5f6-12345f65f98e</serviceContextId>
-  <data>
-    <K_Application>
-      <Id>ABCD001122334455</Id>
-      <Decision>
-        <Name>TesteNome</Name>
-      </Decision>
-      <Order>08</Order>
-      <Client>
-        <DataClient>
-          <DataClient_Item>
-            <Concentrate>
-              <RegistrationData>
-                <Name>AAAAAA</Name>
-              </RegistrationData>
-              <Score>
-                <Value>BBBBBB</Value>
-                <Model>CCCCCC</Model>
-              </Score>
-            </Concentrate>
-          </DataClient_Item>
-          <DataClient_Item>
-            <Concentrate>
-              <RegistrationData>
-                <Name>EEEEEE</Name>
-              </RegistrationData>
-              <Score>
-                <Value>FFFFFF</Value>
-                <Model>GGGGGG</Model>
-              </Score>
-            </Concentrate>
-          </DataClient_Item>
-        </DataClient>
-      </Client>
-    </K_Application>
-    <Error>
-      <Message>
-        <Message_Item>
-          <IdMessage>HHHHHH</IdMessage>
-        </Message_Item>
-      </Message>
-    </Error>
-    <Key>
-      <A_set>
-        <Value>
-          <Value_Item>IIIIII</Value_Item>
-          <Value_Item>JJJJJJ</Value_Item>
-          <Value_Item>KKKKKK</Value_Item>
-          <Value_Item>LLLLLL</Value_Item>
-          <Value_Item>MMMMMM</Value_Item>
-        </Value>
-      </A_set>
-    </Key>
-  </data>
-</root>
+<xsd:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="root">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="data">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="Error">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="Message" minOccurs="0" maxOccurs="unbounded">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="IdMessage" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+              <xsd:element name="K_Application">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="Client">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="DataClient" minOccurs="0" maxOccurs="unbounded">
+                            <xsd:complexType>
+                              <xsd:sequence>
+                                <xsd:element name="Concentrate">
+                                  <xsd:complexType>
+                                    <xsd:sequence>
+                                      <xsd:element name="RegistrationData">
+                                        <xsd:complexType>
+                                          <xsd:sequence>
+                                            <xsd:element name="Name" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                                          </xsd:sequence>
+                                        </xsd:complexType>
+                                      </xsd:element>
+                                      <xsd:element name="Score">
+                                        <xsd:complexType>
+                                          <xsd:sequence>
+                                            <xsd:element name="Value" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                                          </xsd:sequence>
+                                        </xsd:complexType>
+                                      </xsd:element>
+                                    </xsd:sequence>
+                                  </xsd:complexType>
+                                </xsd:element>
+                                <xsd:element name="Dist">
+                                  <xsd:complexType>
+                                    <xsd:sequence>
+                                      <xsd:element name="Score">
+                                        <xsd:complexType>
+                                          <xsd:sequence>
+                                            <xsd:element name="Model" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                                          </xsd:sequence>
+                                        </xsd:complexType>
+                                      </xsd:element>
+                                    </xsd:sequence>
+                                  </xsd:complexType>
+                                </xsd:element>
+                              </xsd:sequence>
+                            </xsd:complexType>
+                          </xsd:element>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="Decision">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="Name" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="Id" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="Order" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+              <xsd:element name="Key">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="A_set">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="Value" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+        <xsd:element name="serviceContextId" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>
 ```
 
 ## Requisitos
