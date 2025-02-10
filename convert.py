@@ -214,7 +214,14 @@ def sanitize_element_name(name, fileName='change_name.json'):
 
 # Função para substituir xs: por xsd:
 def replace_prefix_xsd(content):
-  return re.sub(r'\bxs:', 'xsd:', content)
+  # Substitui xs: por xsd:
+  content = re.sub(r'\bxs:', 'xsd:', content)
+
+  # Substitui :xs= por :xsd=
+  content = re.sub(r'\b:xs=', ':xsd=', content)
+  
+  # Retorna o conteúdo
+  return content
 
 # Função para construir o esquema XSD
 def json_to_xsd(data, fileName):
