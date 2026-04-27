@@ -226,10 +226,7 @@ Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista d
             },
             "Dist": {
               "Score": {
-                "Model": [
-                  "CCCCCC",
-                  "DDDDDD"
-                ]
+                "Model": ["CCCCCC", "DDDDDD"]
               }
             }
           },
@@ -244,10 +241,7 @@ Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista d
             },
             "Dist": {
               "Score": {
-                "Model": [
-                  "GGGGGG",
-                  "HHHHHH"
-                ]
+                "Model": ["GGGGGG", "HHHHHH"]
               }
             }
           }
@@ -261,13 +255,7 @@ Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista d
     },
     "Key": {
       "A-set": {
-        "Value": [
-          "IIIIII",
-          "JJJJJJ",
-          "KKKKKK",
-          "LLLLLL",
-          "MMMMMM"
-        ]
+        "Value": ["IIIIII", "JJJJJJ", "KKKKKK", "LLLLLL", "MMMMMM"]
       }
     }
   },
@@ -565,6 +553,18 @@ Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista d
 - Python 3.x
 - Biblioteca `lxml`
 
-## Autor
+## 📄 Arquivos do Projeto
 
-Este projeto foi desenvolvido por [Paulo Freitas](https://github.com/paulofreitas91).
+```plaintext
+convert-to-xsd/
+├── .gitignore        # Arquivo de configuração do Git
+├── convert.py        # Script Python
+├── example.txt       # Arquivo de exemplo
+├── LICENSE           # Licença do projeto
+├── README.md         # Este arquivo
+└── requirements.txt  # Dependências do projeto
+```
+
+## 📜 Licença
+
+Este projeto está licenciado sob a [Licença MIT](LICENSE).
