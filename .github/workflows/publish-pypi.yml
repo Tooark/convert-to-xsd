@@ -1,0 +1,188 @@
+name: Release and publish package
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: Create tag and GitHub release from the version in setup.cfg
+        required: false
+        default: true
+        type: boolean
+      publish_to_pypi:
+        description: Publish the current ref to PyPI
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  packages: read
+
+env:
+  PYTHON_VERSION: '3.11'
+  TRIVY_SCANNER_IMAGE: ghcr.io/tooark/trivy-hadolint:latest
+
+jobs:
+  security-scan:
+    name: Security scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run filesystem scan
+        env:
+          TRIVY_EXIT_CODE: '1'
+          TRIVY_IGNORE_UNFIXED: 'true'
+          TRIVY_SCANNERS: vuln,secret,misconfig
+          TRIVY_TIMEOUT: 10m
+        run: |
+          mkdir -p "${{ runner.temp }}/ci-reports"
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -v "${{ runner.temp }}/ci-reports:/tmp/ci-reports" \
+            -e TRIVY_SEVERITY \
+            -e TRIVY_EXIT_CODE \
+            -e TRIVY_IGNORE_UNFIXED \
+            -e TRIVY_SCANNERS \
+            -e TRIVY_TIMEOUT \
+            "$TRIVY_SCANNER_IMAGE" \
+            filesystem-scan /workspace
+
+      - name: Run repository scan
+        env:
+          TRIVY_SEVERITY: CRITICAL,HIGH
+          TRIVY_EXIT_CODE: '1'
+          TRIVY_IGNORE_UNFIXED: 'true'
+          TRIVY_SCANNERS: vuln,secret,misconfig
+          TRIVY_TIMEOUT: 10m
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -v "${{ runner.temp }}/ci-reports:/tmp/ci-reports" \
+            -e TRIVY_SEVERITY \
+            -e TRIVY_EXIT_CODE \
+            -e TRIVY_IGNORE_UNFIXED \
+            -e TRIVY_SCANNERS \
+            -e TRIVY_TIMEOUT \
+            -e TRIVY_OUTPUT=/tmp/ci-reports/trivy-repo.json \
+            "$TRIVY_SCANNER_IMAGE" \
+            repo-scan /workspace
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports-${{ github.run_id }}
+          path: ${{ runner.temp }}/ci-reports
+          retention-days: 30
+
+  create-release:
+    name: Create tag and GitHub release
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve package version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(python -c "from configparser import ConfigParser; config = ConfigParser(); config.read('setup.cfg', encoding='utf-8'); print(config['metadata']['version'].strip())")
+          TAG_NAME="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag already exists
+        id: tag_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push tag
+        if: steps.tag_check.outputs.exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "refs/tags/${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub release
+        if: steps.tag_check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --generate-notes
+
+      - name: Skip existing version
+        if: steps.tag_check.outputs.exists == 'true'
+        run: echo "Tag ${{ steps.version.outputs.tag }} already exists. Skipping release creation."
+
+  publish-pypi:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: |
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_pypi == 'true')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Check distributions
+        run: python -m twine check dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: python -m twine upload dist/*

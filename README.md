@@ -1,179 +1,109 @@
 # Conversor de JSON Plano para JSON Aninhado, XML e XSD
 
-Este projeto contém um script Python que converte um arquivo JSON plano em um JSON com estrutura aninhada, um arquivo XML, um esquema XSD e um esquema XSD para SAP a partir do JSON aninhado.
+Ferramenta simples para converter JSON "plano" (flat) em `JSON` aninhado, gerar
+um arquivo `XML` correspondente e produzir esquemas `XSD` (incluindo uma versão
+com prefixo `xsd:` compatível com sistemas como o SAP).
 
-## Estrutura do Projeto
+## Visão geral
 
-- `example.txt`: Arquivo de entrada contendo o JSON plano.
-- `convert.py`: Script Python que realiza a conversão.
-- `requirements.txt`: Arquivo de configuração das dependências do projeto.
-- `example.json`: Arquivo de saída contendo o JSON aninhado.
-- `example.xml`: Arquivo de saída contendo o XML gerado.
-- `example.xsd`: Arquivo de saída contendo o esquema XSD gerado.
-- `example_SAP.xsd`: Arquivo de saída contendo o esquema XSD com substituição de prefixo para `xsd:` gerado.
-- `example_change_name.json`: Arquivo de mapeamento de chaves que foram alteradas.
+O script principal é `convert.py`. Ele pode ser executado diretamente com
+`python convert.py` ou instalado como um comando (entry-point) chamado
+`convert-to-xsd` (veja seção de instalação).
 
-## Funcionalidades
+Principais comportamentos:
 
-### Função `convert_to_nested_dict`
+- Converte chaves no formato pontuado (ex: `a.b[1].c`) para estrutura `JSON` aninhada.
+- Gera arquivos de saída ao lado do arquivo de entrada: `JSON` aninhado, `XML`, `XSD`, `XSD` para SAP (`*_SAP.xsd`) e um arquivo de mapeamento de nomes alterados (`*_change_name.json`).
+- Quando executado sem parâmetros, processa todos os arquivos presentes na pasta `files/` (cria essa pasta se não existir e tenta mover `example.txt` para dentro).
 
-Esta função converte um dicionário plano em um dicionário aninhado.
+## Requisitos
 
-- **Parâmetros**:
-  - `flat_dict` (dict): Dicionário plano a ser convertido.
-- **Retorno**:
-  - `result` (dict): Dicionário aninhado.
+- Python 3.8 ou superior
+- Biblioteca `lxml` (instalada via `requirements.txt`)
 
-### Função `remove_empty_values`
+## Instalação
 
-Esta função remove valores vazios de um dicionário.
+Uso rápido (ambiente virtual):
 
-- **Parâmetros**:
-  - `data` (dict): Dicionário a ser limpo.
-- **Retorno**:
-  - `data` (dict): Dicionário limpo.
-
-### Função `generate_xsd_element`
-
-Esta função gera um elemento XSD a partir de um dicionário.
-
-- **Parâmetros**:
-  - `name` (str): Nome do elemento.
-  - `value` (any): Valor do elemento.
-  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas.
-  - `root` (str): Nome do elemento raiz. Padrão é 'root'.
-- **Retorno**:
-  - `xsd_element` (Element): Elemento XSD gerado.
-
-### Função `get_xsd_type`
-
-Esta função obtém o tipo XSD com base no tipo do valor.
-
-- **Parâmetros**:
-  - `value` (any): Valor para determinar o tipo XSD.
-- **Retorno**:
-  - `type` (str): Tipo XSD correspondente.
-
-### Função `sanitize_element_name`
-
-Esta função substitui caracteres inválidos em nomes de elementos XML.
-
-- **Parâmetros**:
-  - `name` (str): Nome do elemento.
-  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas. Parâmetro padrão é `change_name.json`.
-- **Retorno**:
-  - `new_name` (str): Nome do elemento sanitizado.
-
-### Função `replace_prefix_xsd`
-
-Esta função substitui o prefixo `xs` por `xsd` no conteúdo do XSD.
-
-- **Parâmetros**:
-  - `content` (str): Conteúdo do XSD.
-- **Retorno**:
-  - `content` (str): Conteúdo do XSD com o prefixo substituído.
-
-### Função `json_to_xsd`
-
-Esta função converte um dicionário JSON em um esquema XSD.
-
-- **Parâmetros**:
-  - `data` (dict): Dicionário JSON a ser convertido.
-  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas.
-  - `root` (str): Nome do elemento raiz. Padrão é 'root'.
-- **Retorno**:
-  - `xsd_schema` (Element): Esquema XSD gerado.
-
-### Função `json_to_xml`
-
-Esta função converte um dicionário JSON em um XML.
-
-- **Parâmetros**:
-  - `element_name` (str): Nome do elemento raiz.
-  - `data` (dict): Dicionário JSON a ser convertido.
-  - `fileName` (str): Nome do arquivo com as chaves que foram alteradas.
-- **Retorno**:
-  - `xml_element` (Element): Elemento XML gerado.
-
-### Função `convert`
-
-A função `convert` do script realiza as seguintes etapas:
-
-1. Captura o nome do arquivo.
-2. Cria o arquivo de mapeamento de chaves alteradas.
-3. Carrega o conteúdo do arquivo JSON flat ou aninhado.
-4. Converte o conteúdo JSON em um dicionário.
-5. Converte o dicionário plano em um dicionário aninhado.
-6. Remove valores vazios do dicionário aninhado.
-7. Salva o JSON aninhado com o nome do arquivo original.
-8. Gera o esquema XSD a partir do JSON aninhado.
-9. Salva o esquema XSD com o nome do arquivo original.
-10. Altera o prefixo de `xs:` para `xsd:`.
-11. Salva o esquema XSD com o nome do arquivo original com adicional de `_SAP`.
-12. Converte o JSON aninhado em XML.
-13. Salva o XML com o nome do arquivo original.
-
-- **Parâmetros**:
-  - `fileName` (str): Nome do arquivo JSON flat ou aninhado.
-  - `root` (str): Nome do elemento raiz. Padrão é 'root'.
-
-### Função `validate_xml_xsd`
-
-Esta função valida um arquivo XML contra um arquivo XSD.
-
-1. Carrega o arquivo XML.
-2. Carrega o arquivo XSD.
-3. Valida o arquivo XML contra o arquivo XSD.
-
-- **Parâmetros**:
-  - `file` (str): Nome do arquivo XML e XSD a ser validado.
-
-### Função Principal
-
-Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista de arquivos a serem validados.
-
-## Como Executar
-
-1. Coloque os arquivos que queira converter na mesma pasta que o script `convert.py`.
-2. Adicione os nomes do elemento raiz com a chave `root` e os nomes dos arquivos com as extensões com a chave `file` na variável `listFiles` dentro da função principal. Conforme exemplo abaixo:
-
-   ```python
-   listFiles = [
-       {
-         'root': 'example',
-         'file': 'example.txt'
-       }
-   ]
-   ```
-
-3. Instale as dependências listadas no `requirements.txt`:
-
-   ```sh
-   pip install -r requirements.txt
-   ```
-
-4. Execute o script `convert.py`:
-
-   ```sh
-   python convert.py
-   ```
-
-5. Verifique os arquivos de saída `*.json`, `*.xml`, `*.xsd` e `*_SAP.xsd` gerados na mesma pasta.
-
-## Exemplo
-
-### Variável `listFiles` na Função Principal (`convert.py`)
-
-```python
-   listFiles = [
-       {
-         'root': 'example',
-         'file': 'example.txt'
-       }
-   ]
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1   # PowerShell (Windows)
+# ou (CMD): .venv\Scripts\activate.bat
+# ou (Linux/macOS): source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### Arquivo de Entrada (`example.txt`)
+Instalar como pacote (para obter o comando `convert-to-xsd`):
+
+```bash
+pip install .     # instalação local
+pip install -e .  # ou para desenvolvimento com edição ao vivo
+```
+
+> O entry-point CLI é definido em `setup.cfg` como `convert-to-xsd = convert:main`.
+
+## Uso
+
+Sintaxe:
+
+```text
+python convert.py [--root ROOT_NAME] [--json] [--xml] [--xsd] [--sap] [paths...]
+# ou, se instalado
+convert-to-xsd [--root ROOT_NAME] [--json] [--xml] [--xsd] [--sap] [paths...]
+```
+
+| Argumento      | Descrição                                                                                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paths`        | Arquivo(s) ou diretório(s) a converter. Quando um diretório é informado, todos os `.json` e `.txt` dentro dele são processados. Aceita múltiplos caminhos. |
+| `--root`, `-r` | Nome do elemento raiz (padrão: nome do arquivo sem extensão).                                                                                              |
+| `--json`, `-j` | Salva somente o arquivo `.json` aninhado.                                                                                                                  |
+| `--xml`, `-x`  | Salva somente o arquivo `.xml`.                                                                                                                            |
+| `--xsd`, `-d`  | Salva somente o arquivo `.xsd`.                                                                                                                            |
+| `--sap`, `-s`  | Salva somente o arquivo `_SAP.xsd` (prefixo `xsd:`).                                                                                                       |
+
+> **Padrão:** quando nenhuma flag de saída (`--json`, `--xml`, `--xsd`, `--sap`) é informada, **todos** os formatos são gerados. Ao passar uma ou mais flags, apenas os formatos selecionados são salvos.
+
+Exemplos:
+
+- Converter um arquivo específico (gera todos os formatos):
+
+```bash
+python convert.py example.txt
+```
+
+- Gerar apenas XSD e SAP:
+
+```bash
+python convert.py --xsd --sap example.txt
+```
+
+- Especificar o nome do elemento raiz:
+
+```bash
+python convert.py --root MeuRoot example.txt
+```
+
+- Processar um diretório inteiro (apenas `.json` e `.txt`):
+
+```bash
+python convert.py files/
+```
+
+- Processar múltiplos caminhos ao mesmo tempo:
+
+```bash
+python convert.py files/ dados/input.json
+```
+
+- Exibir a ajuda (sem parâmetros):
+
+```bash
+python convert.py
+```
+
+## Formato de entrada
+
+O arquivo de entrada deve conter JSON válido (o projeto usa `json.loads`), mesmo que o arquivo esteja com extensão `.txt`. As chaves podem usar o formato "pontuado" para indicar aninhamento e índices de arrays, por exemplo:
 
 ```json
 {
@@ -548,11 +478,6 @@ Chama as funções `convert` e `validate_xml_xsd` passando um arquivo da lista d
 }
 ```
 
-## Requisitos
-
-- Python 3.x
-- Biblioteca `lxml`
-
 ## 📄 Arquivos do Projeto
 
 ```plaintext
@@ -565,6 +490,91 @@ convert-to-xsd/
 └── requirements.txt  # Dependências do projeto
 ```
 
-## 📜 Licença
+## Saídas geradas
 
-Este projeto está licenciado sob a [Licença MIT](LICENSE).
+Para cada arquivo de entrada `nome.ext` serão gerados (no mesmo diretório do arquivo de entrada):
+
+| Arquivo                 | Condição                                 |
+| ----------------------- | ---------------------------------------- |
+| `nome.json`             | Sempre (ou quando `--json` informado)    |
+| `nome.xml`              | Sempre (ou quando `--xml` informado)     |
+| `nome.xsd`              | Sempre (ou quando `--xsd` informado)     |
+| `nome_SAP.xsd`          | Sempre (ou quando `--sap` informado)     |
+| `nome_change_name.json` | Sempre — mapeamento de nomes sanitizados |
+
+> Quando **nenhuma** flag de saída é informada, todos os formatos acima são gerados.
+> Quando **uma ou mais** flags são informadas, apenas os formatos correspondentes são salvos.
+
+Obs.: o arquivo `*_change_name.json` registra substituições feitas em nomes de elementos XML inválidos (caracteres trocados por `_`).
+
+## Validação
+
+O script tenta validar o XML gerado contra o XSD correspondente e imprime o
+resultado. Caso a validação falhe, o log de erros será mostrado no console.
+
+## Desenvolvimento
+
+- Faça fork e crie uma branch para sua feature/bugfix.
+- Abra um pull request descrevendo a mudança.
+- Mantenha commits pequenos e com mensagens claras.
+
+Recomendações locais:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]         # se houver extras de desenvolvimento
+python convert.py example.txt # Execute o script diretamente para testes rápidos
+```
+
+Este projeto está licenciado sob a Licença MIT — veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## CI/CD — Publicação no PyPI
+
+Este repositório inclui um workflow do GitHub Actions que constrói o pacote e publica no PyPI.
+
+- Arquivo do workflow: `.github/workflows/publish-pypi.yml`.
+- O workflow roda automaticamente quando você cria uma _tag_ no formato `vX.Y.Z` (push de tag), quando uma _release_ é publicada no GitHub, ou manualmente via _workflow_dispatch_.
+
+Requisitos e passos para habilitar publicação automática:
+
+1. Crie um token de API no PyPI: [https://pypi.org/manage/account/token/](https://pypi.org/manage/account/token/)
+   - Nomeie o token (ex.: `github-actions-tooark`).
+   - Dê permissão para publicar o(s) pacote(s) desejados (escopo apropriado).
+
+2. No repositório GitHub (ou em `Organization > Settings > Secrets` se quiser compartilhar em vários repositórios), adicione um _secret_ chamado `PYPI_API_TOKEN` com o valor do token criado.
+
+3. Para publicar, crie e envie uma tag seguindo semântica de versão, por exemplo:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+O workflow irá:
+
+- instalar as dependências de build (`build`, `twine`)
+- executar `python -m build` para gerar `dist/*`
+- executar `twine upload dist/*` usando o secret `PYPI_API_TOKEN`
+
+Observações:
+
+- O token deve ter permissão para publicar o pacote no PyPI; se o pacote pertence à organização `tooark` no PyPI, o token precisa ter escopo/permissão apropriada para esse projeto (adicione a conta/organização como owner/maintainer no PyPI, se necessário).
+- Para testes, você pode usar o Test PyPI e um secret separado apontando para `https://test.pypi.org/legacy/` (ajustes no workflow necessários).
+- Se preferir, podemos estender o workflow para publicar apenas em eventos `release` ou adicionar uma etapa de testes antes do build.
+
+## Contribuição
+
+Contribuições são bem-vindas. Para contribuir:
+
+1. Abra uma issue descrevendo o problema ou a feature desejada.
+2. Faça um fork do repositório e crie uma branch com um nome descritivo.
+3. Abra um PR apontando para a branch `main` do repositório original.
+
+Sugestões de conteúdo do PR:
+
+- Testes (quando aplicável)
+- Documentação atualizada
+- Descrição clara das mudanças e impacto
+
+## 📜 Licença
